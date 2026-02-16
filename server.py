@@ -41,8 +41,8 @@ app = FastAPI(title="YouDescribe Youtube-Downloader", version="1.0.0")
 
 # Configuration from environment
 DOWNLOAD_DIR = os.path.expanduser(os.getenv("DOWNLOAD_DIR", "~/Downloads/YouDescribeDownloadedVideos"))
-S3_BUCKET_NAME = os.getenv("S3_BUCKET_NAME", "youdescribe-videos")
-AWS_REGION = os.getenv("AWS_REGION", "us-west-2")
+S3_BUCKET_NAME = os.getenv("S3_BUCKET_NAME", "youdescribe-downloaded-youtube-videos")
+AWS_REGION = os.getenv("AWS_REGION", "us-west-1")
 API_CALLBACK_URL = os.getenv("API_CALLBACK_URL", "http://localhost:4001")
 PORT = int(os.getenv("PORT", "8001"))
 

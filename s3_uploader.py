@@ -12,7 +12,7 @@ logger = logging.getLogger("youtube_downloader")
 
 
 class S3Uploader:
-    def __init__(self, bucket_name: str, region: str = "us-west-2"):
+    def __init__(self, bucket_name: str, region: str = "us-west-1"):
         self.bucket_name = bucket_name
         self.region = region
         self.s3_client = boto3.client(

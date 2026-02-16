@@ -1,13 +1,13 @@
 #!/bin/bash
 # Setup script for YouDescribe Youtube-Downloader AWS resources
-# Run this after configuring AWS CLI with your zhenzhen-youdescribe-2 credentials:
-#   aws configure --profile youdescribe
-# Then run: AWS_PROFILE=youdescribe bash setup_aws.sh
+# Run this after configuring AWS CLI with your zhenzhen-admin credentials:
+#   aws configure --profile youdescribe-admin
+# Then run: AWS_PROFILE=youdescribe-admin bash setup_aws.sh
 
 set -e
 
-BUCKET_NAME="youdescribe-videos"
-REGION="us-west-2"
+BUCKET_NAME="youdescribe-downloaded-youtube-videos"
+REGION="us-west-1"
 
 echo "=== YouDescribe AWS Setup ==="
 echo "Account:"

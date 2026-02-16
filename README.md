@@ -73,8 +73,8 @@ Service health check.
 |---|---|---|
 | `AWS_ACCESS_KEY_ID` | AWS access key | - |
 | `AWS_SECRET_ACCESS_KEY` | AWS secret key | - |
-| `AWS_REGION` | AWS region | `us-west-2` |
-| `S3_BUCKET_NAME` | S3 bucket for videos | `youdescribe-videos` |
+| `AWS_REGION` | AWS region | `us-west-1` |
+| `S3_BUCKET_NAME` | S3 bucket for videos | `youdescribe-downloaded-youtube-videos` |
 | `DOWNLOAD_DIR` | Local download directory | `~/Downloads/YouDescribeDownloadedVideos` |
 | `API_CALLBACK_URL` | YouDescribeX API URL | `http://localhost:4001` |
 | `PORT` | Server port | `8001` |
