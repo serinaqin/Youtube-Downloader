@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environment
+venv/
+env/
+.venv/
+
+# Environment variables
+.env
+
+# IDE
+.vscode/
+.idea/
+
+# Downloaded videos (large files)
+downloads/
+*.mp4
+*.webm
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
