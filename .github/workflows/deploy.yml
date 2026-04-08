@@ -35,7 +35,7 @@ jobs:
           DOWNLOAD_DIR=${{ vars.DOWNLOAD_DIR }}
           PORT=${{ vars.PORT }}
           "@
-          $envContent | Set-Content -Path "${{ env.PROJECT_DIR }}\.env" -Encoding UTF8
+          [System.IO.File]::WriteAllText("${{ env.PROJECT_DIR }}\.env", $envContent)
 
       - name: Install dependencies
         shell: powershell
@@ -46,9 +46,18 @@ jobs:
         shell: powershell
         run: |
           $nssm = "${{ env.NSSM_EXE }}"
-          & $nssm restart YoutubeDownloader
+          & $nssm stop YoutubeDownloader 2>&1 | Out-Null
+          Start-Sleep -Seconds 2
+          & $nssm start YoutubeDownloader
           Start-Sleep -Seconds 3
           $status = & $nssm status YoutubeDownloader
+          Write-Host "YoutubeDownloader status: $status"
+          if ($status -ne "SERVICE_RUNNING") {
+            Write-Host "Retrying start..."
+            & $nssm start YoutubeDownloader 2>&1 | Out-Null
+            Start-Sleep -Seconds 3
+            $status = & $nssm status YoutubeDownloader
+          }
           if ($status -ne "SERVICE_RUNNING") {
             Write-Error "Service failed to start. Status: $status"
             exit 1
