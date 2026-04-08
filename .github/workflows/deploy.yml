@@ -19,6 +19,7 @@ jobs:
       - name: Pull latest code
         shell: powershell
         run: |
+          & "${{ env.GIT_EXE }}" config --global --add safe.directory C:/Users/YDX2/dev/Youtube-Downloader
           Set-Location "${{ env.PROJECT_DIR }}"
           & "${{ env.GIT_EXE }}" fetch origin main
           & "${{ env.GIT_EXE }}" reset --hard origin/main
