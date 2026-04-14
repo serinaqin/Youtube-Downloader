@@ -7,6 +7,8 @@ on:
 
 env:
   PROJECT_DIR: /Users/newuser/dev/Youtube-Downloader
+  # Homebrew is not in the runner's default PATH — include both Intel and Apple Silicon locations
+  PATH: /opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
 
 jobs:
   deploy:
