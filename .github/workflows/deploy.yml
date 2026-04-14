@@ -1,4 +1,4 @@
-name: Deploy to Local PC
+name: Deploy to Mac
 
 on:
   push:
@@ -6,60 +6,43 @@ on:
   workflow_dispatch:
 
 env:
-  PROJECT_DIR: C:\Users\YDX2\dev\Youtube-Downloader
-  NSSM_EXE: C:\Users\YDX2\AppData\Local\Microsoft\WinGet\Packages\NSSM.NSSM_Microsoft.Winget.Source_8wekyb3d8bbwe\nssm-2.24-101-g897c7ad\win64\nssm.exe
-  GIT_EXE: C:\Program Files\Git\bin\git.exe
-  PIP_EXE: C:\Users\YDX2\AppData\Local\Python\bin\pip.exe
+  PROJECT_DIR: /Users/newuser/dev/Youtube-Downloader
 
 jobs:
   deploy:
-    runs-on: self-hosted
+    runs-on: [self-hosted, macOS]
 
     steps:
       - name: Pull latest code
-        shell: powershell
         run: |
-          & "${{ env.GIT_EXE }}" config --global --add safe.directory C:/Users/YDX2/dev/Youtube-Downloader
-          Set-Location "${{ env.PROJECT_DIR }}"
-          & "${{ env.GIT_EXE }}" fetch origin main
-          & "${{ env.GIT_EXE }}" reset --hard origin/main
+          git -C "${{ env.PROJECT_DIR }}" fetch origin main
+          git -C "${{ env.PROJECT_DIR }}" reset --hard origin/main
 
       - name: Generate .env from GitHub Variables
-        shell: powershell
         run: |
-          $envContent = @"
-          AWS_ACCESS_KEY_ID=${{ vars.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY=${{ vars.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION=${{ vars.AWS_REGION }}
-          S3_BUCKET_NAME=${{ vars.S3_BUCKET_NAME }}
-          DOWNLOAD_DIR=${{ vars.DOWNLOAD_DIR }}
-          PORT=${{ vars.PORT }}
-          "@
-          [System.IO.File]::WriteAllText("${{ env.PROJECT_DIR }}\.env", $envContent)
+          {
+            echo "AWS_ACCESS_KEY_ID=${{ vars.AWS_ACCESS_KEY_ID }}"
+            echo "AWS_SECRET_ACCESS_KEY=${{ vars.AWS_SECRET_ACCESS_KEY }}"
+            echo "AWS_REGION=${{ vars.AWS_REGION }}"
+            echo "S3_BUCKET_NAME=${{ vars.S3_BUCKET_NAME }}"
+            echo "DOWNLOAD_DIR=${{ vars.DOWNLOAD_DIR }}"
+            echo "PORT=${{ vars.PORT }}"
+          } > "${{ env.PROJECT_DIR }}/.env"
 
       - name: Install dependencies
-        shell: powershell
-        run: |
-          & "${{ env.PIP_EXE }}" install -r "${{ env.PROJECT_DIR }}\requirements.txt"
+        run: pip3 install -r "${{ env.PROJECT_DIR }}/requirements.txt"
 
       - name: Restart server
-        shell: powershell
         run: |
-          $nssm = "${{ env.NSSM_EXE }}"
-          & $nssm stop YoutubeDownloader 2>&1 | Out-Null
-          Start-Sleep -Seconds 2
-          & $nssm start YoutubeDownloader
-          Start-Sleep -Seconds 3
-          $status = & $nssm status YoutubeDownloader
-          Write-Host "YoutubeDownloader status: $status"
-          if ($status -ne "SERVICE_RUNNING") {
-            Write-Host "Retrying start..."
-            & $nssm start YoutubeDownloader 2>&1 | Out-Null
-            Start-Sleep -Seconds 3
-            $status = & $nssm status YoutubeDownloader
-          }
-          if ($status -ne "SERVICE_RUNNING") {
-            Write-Error "Service failed to start. Status: $status"
+          launchctl kickstart -k "gui/$(id -u)/com.youdescribe.youtube-downloader"
+          sleep 3
+          STATUS=$(launchctl list com.youdescribe.youtube-downloader 2>&1)
+          echo "$STATUS"
+          # PID is the first field; 0 or - means not running
+          PID=$(echo "$STATUS" | awk 'NR==2{print $1}')
+          if [[ "$PID" == "-" || "$PID" == "0" ]]; then
+            echo "ERROR: service failed to start"
+            tail -20 "${{ env.PROJECT_DIR }}/logs/service-stderr.log" || true
             exit 1
-          }
-          Write-Host "YoutubeDownloader service is running"
+          fi
+          echo "YoutubeDownloader is running (PID $PID)"
