@@ -41,6 +41,8 @@ echo "=== Installing YoutubeDownloader LaunchAgent ==="
 PLIST="$PLIST_DIR/com.youdescribe.youtube-downloader.plist"
 unload_if_loaded "$PLIST"
 
+PYTHON_BIN_DIR=$(dirname "$PYTHON")
+
 cat > "$PLIST" << EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -55,6 +57,11 @@ cat > "$PLIST" << EOF
     </array>
     <key>WorkingDirectory</key>
     <string>$PROJECT_DIR</string>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>$PYTHON_BIN_DIR:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+    </dict>
     <key>RunAtLoad</key>
     <true/>
     <key>KeepAlive</key>
