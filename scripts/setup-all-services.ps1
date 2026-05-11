@@ -19,7 +19,7 @@ try {
     $PythonExe   = "C:\Users\YDX2\AppData\Local\Python\pythoncore-3.14-64\python.exe"
     $NgrokExe    = (Get-Command ngrok).Source
     $NssmExe     = "C:\Users\YDX2\AppData\Local\Microsoft\WinGet\Packages\NSSM.NSSM_Microsoft.Winget.Source_8wekyb3d8bbwe\nssm-2.24-101-g897c7ad\win64\nssm.exe"
-    $NgrokDomain = "nonimpregnated-georgine-thetically.ngrok-free.dev"
+    $NgrokDomain = "handset-cheddar-bonelike.ngrok-free.dev"
     $ServerPort  = 8001
 
     Write-Host "Python: $PythonExe"

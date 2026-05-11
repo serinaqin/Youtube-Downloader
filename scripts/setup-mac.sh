@@ -10,7 +10,7 @@ set -euo pipefail
 
 PROJECT_DIR="$HOME/dev/Youtube-Downloader"
 RUNNER_DIR="$HOME/actions-runner"
-NGROK_DOMAIN="nonimpregnated-georgine-thetically.ngrok-free.dev"
+NGROK_DOMAIN="handset-cheddar-bonelike.ngrok-free.dev"
 SERVER_PORT=8001
 LOG_DIR="$PROJECT_DIR/logs"
 PLIST_DIR="$HOME/Library/LaunchAgents"

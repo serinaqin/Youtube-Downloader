@@ -22,7 +22,7 @@ Self-hosted runner (on the same PC) picks up the job
         │
         ▼
 Server is live at http://localhost:8001
-Exposed publicly via ngrok at https://nonimpregnated-georgine-thetically.ngrok-free.dev
+Exposed publicly via ngrok at https://handset-cheddar-bonelike.ngrok-free.dev
 ```
 
 ## Components
