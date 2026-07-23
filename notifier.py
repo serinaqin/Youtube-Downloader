@@ -43,8 +43,8 @@ class SNSNotifier:
                 aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
             )
 
-    def notify(self, youtube_id: str, stage: str, error_detail: str) -> None:
-        """Send a failure alert. Never raises - alerting must not break the pipeline."""
+    def notify(self, youtube_id: str, stage: str, error_detail: str, kind: str = "failure") -> None:
+        """Send an alert (kind: "failure" or "recovery"). Never raises - alerting must not break the pipeline."""
         if self._client is None:
             return
         try:
@@ -59,7 +59,7 @@ class SNSNotifier:
 
             self._client.publish(
                 TopicArn=self.topic_arn,
-                Subject=self._build_subject(youtube_id, stage),
+                Subject=self._build_subject(youtube_id, stage, kind),
                 Message=self._build_message(youtube_id, stage, error_detail),
             )
             self._last_sent_at = now
@@ -68,8 +68,9 @@ class SNSNotifier:
         except Exception:
             logger.error(f"[{youtube_id}] Failed to send SNS alert", exc_info=True)
 
-    def _build_subject(self, youtube_id: str, stage: str) -> str:
-        subject = f"[Youtube-Downloader] FAILED {youtube_id} ({stage})"
+    def _build_subject(self, youtube_id: str, stage: str, kind: str = "failure") -> str:
+        word = "RECOVERED" if kind == "recovery" else "FAILED"
+        subject = f"[Youtube-Downloader] {word} {youtube_id} ({stage})"
         subject = "".join(c for c in subject if c.isprintable())
         return subject[:SNS_SUBJECT_MAX_LEN - 1]
 

@@ -11,6 +11,7 @@ from dotenv import load_dotenv
 from youtube_downloader import download_video
 from s3_uploader import S3Uploader
 from notifier import SNSNotifier
+from ytdlp_updater import YtdlpUpdater
 
 load_dotenv()
 
@@ -42,6 +43,9 @@ notifier = SNSNotifier(
     cooldown_seconds=NOTIFY_COOLDOWN_SECONDS,
 )
 
+YTDLP_AUTO_UPDATE = os.getenv("YTDLP_AUTO_UPDATE", "true").strip().lower() != "false"
+updater = YtdlpUpdater(enabled=YTDLP_AUTO_UPDATE)
+
 download_jobs: dict = {}
 
 
@@ -72,14 +76,28 @@ async def download_and_upload(youtube_id: str):
         success, error_detail = await asyncio.to_thread(download_video, youtube_id, DOWNLOAD_DIR)
 
         if not success:
+            # Self-heal: a stale yt-dlp is the most common cause of mass failures.
+            upd = await asyncio.to_thread(updater.maybe_update)
+            if upd.updated:
+                logger.info(f"[{youtube_id}] Retrying download after {upd.summary()}")
+                success, error_detail = await asyncio.to_thread(download_video, youtube_id, DOWNLOAD_DIR)
+                if success:
+                    await asyncio.to_thread(
+                        notifier.notify, youtube_id, "auto-update",
+                        f"Download initially failed; succeeded after {upd.summary()}.",
+                        "recovery",
+                    )
+
+        if not success:
             # Public status endpoint gets the generic message; the yt-dlp
             # stderr detail goes only to the internal SNS alert and the log.
             download_jobs[youtube_id]["status"] = DownloadStatus.FAILED
             download_jobs[youtube_id]["error"] = "Download failed after all attempts"
             logger.error(f"[{youtube_id}] Download failed")
+            detail = error_detail or "Download failed after all attempts"
             await asyncio.to_thread(
                 notifier.notify, youtube_id, "download",
-                error_detail or "Download failed after all attempts",
+                f"{detail}\n\n[{upd.summary()}]",
             )
             return
 

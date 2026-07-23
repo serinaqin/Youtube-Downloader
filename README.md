@@ -127,3 +127,13 @@ Restart the server. Verify with a video ID that is guaranteed to fail
 (e.g. a deleted video): `curl -X POST localhost:8001/api/download -H
 'Content-Type: application/json' -d '{"youtube_id": "xxxxxxxxxxx"}'` and
 check that the alert email arrives with the yt-dlp error tail.
+
+### Self-healing: yt-dlp auto-update
+
+The most common failure cause is an outdated yt-dlp (YouTube changes
+frequently break old versions). When every download attempt fails, the
+server runs `pip3 install --upgrade yt-dlp` (at most once per 24h) and
+retries the download once if a new version was actually installed. Every
+outcome is included in the alert email; a successful self-heal sends a
+RECOVERED notice instead of a failure alert. Disable with
+`YTDLP_AUTO_UPDATE=false` in `.env`.
