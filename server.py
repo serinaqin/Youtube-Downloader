@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 
 from youtube_downloader import download_video
 from s3_uploader import S3Uploader
+from notifier import SNSNotifier
 
 load_dotenv()
 
@@ -31,6 +32,15 @@ AWS_REGION = os.getenv("AWS_REGION", "us-west-1")
 PORT = int(os.getenv("PORT", "8001"))
 
 s3_uploader = S3Uploader(bucket_name=S3_BUCKET_NAME, region=AWS_REGION)
+
+SNS_TOPIC_ARN = os.getenv("SNS_TOPIC_ARN", "")
+NOTIFY_COOLDOWN_SECONDS = int(os.getenv("NOTIFY_COOLDOWN_SECONDS", "1800"))
+
+notifier = SNSNotifier(
+    topic_arn=SNS_TOPIC_ARN,
+    region=AWS_REGION,
+    cooldown_seconds=NOTIFY_COOLDOWN_SECONDS,
+)
 
 download_jobs: dict = {}
 
@@ -59,12 +69,18 @@ async def download_and_upload(youtube_id: str):
         download_jobs[youtube_id] = {"status": DownloadStatus.DOWNLOADING, "s3_paths": None, "error": None}
 
         logger.info(f"[{youtube_id}] Starting download...")
-        success = await asyncio.to_thread(download_video, youtube_id, DOWNLOAD_DIR)
+        success, error_detail = await asyncio.to_thread(download_video, youtube_id, DOWNLOAD_DIR)
 
         if not success:
+            # Public status endpoint gets the generic message; the yt-dlp
+            # stderr detail goes only to the internal SNS alert and the log.
             download_jobs[youtube_id]["status"] = DownloadStatus.FAILED
             download_jobs[youtube_id]["error"] = "Download failed after all attempts"
             logger.error(f"[{youtube_id}] Download failed")
+            await asyncio.to_thread(
+                notifier.notify, youtube_id, "download",
+                error_detail or "Download failed after all attempts",
+            )
             return
 
         download_jobs[youtube_id]["status"] = DownloadStatus.UPLOADING
@@ -76,6 +92,7 @@ async def download_and_upload(youtube_id: str):
             download_jobs[youtube_id]["status"] = DownloadStatus.FAILED
             download_jobs[youtube_id]["error"] = "S3 upload failed for video file"
             logger.error(f"[{youtube_id}] S3 upload failed")
+            await asyncio.to_thread(notifier.notify, youtube_id, "s3_upload", "S3 upload failed for video file")
             return
 
         download_jobs[youtube_id]["status"] = DownloadStatus.COMPLETED
@@ -89,6 +106,7 @@ async def download_and_upload(youtube_id: str):
             "s3_paths": None,
             "error": str(e),
         }
+        await asyncio.to_thread(notifier.notify, youtube_id, "unexpected", str(e))
 
 
 @app.post("/api/download", response_model=DownloadStatusResponse)
