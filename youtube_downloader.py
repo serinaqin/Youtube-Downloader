@@ -10,10 +10,19 @@ import subprocess
 import re
 import logging
 from pathlib import Path
+from typing import Optional
 from youtube_transcript_api import YouTubeTranscriptApi
 from datetime import timedelta
 
 logger = logging.getLogger("youtube_downloader")
+
+
+def _stderr_tail(stderr: Optional[str], max_lines: int = 20) -> str:
+    """Last lines of yt-dlp stderr - the actionable error is at the end."""
+    if not stderr:
+        return ""
+    lines = stderr.strip().splitlines()
+    return "\n".join(lines[-max_lines:])
 
 
 def get_video_metadata(video_id: str) -> dict:
@@ -100,7 +109,7 @@ def get_video_metadata(video_id: str) -> dict:
     }
 
 
-def download_video(video_id: str, output_dir: str) -> bool:
+def download_video(video_id: str, output_dir: str) -> tuple[bool, Optional[str]]:
     """
     Download a YouTube video, its metadata, captions, and thumbnail.
 
@@ -109,7 +118,8 @@ def download_video(video_id: str, output_dir: str) -> bool:
         output_dir: Directory to save downloaded files
 
     Returns:
-        True if download succeeded, False otherwise
+        (success, error_detail) tuple. error_detail is the tail of
+        yt-dlp's stderr from the last failed attempt, or None on success.
     """
     url = f"https://www.youtube.com/watch?v={video_id}"
 
@@ -124,7 +134,7 @@ def download_video(video_id: str, output_dir: str) -> bool:
         file_size = os.path.getsize(video_path)
         if file_size > 0:
             logger.info(f"Video {video_id} already downloaded ({file_size / (1024*1024):.2f} MB). Skipping.")
-            return True
+            return True, None
 
     # Fetch metadata
     logger.info(f"Fetching metadata for {video_id}...")
@@ -216,20 +226,28 @@ def download_video(video_id: str, output_dir: str) -> bool:
         ],
     ]
 
+    last_error = None
     for i, cmd in enumerate(download_commands):
         try:
             logger.info(f"Download attempt {i + 1}/{len(download_commands)}...")
-            subprocess.run(cmd, check=True, timeout=600)
+            result = subprocess.run(cmd, check=True, timeout=600, capture_output=True, text=True)
             if os.path.exists(video_path) and os.path.getsize(video_path) > 0:
                 file_size = os.path.getsize(video_path) / (1024 * 1024)
                 logger.info(f"Download successful! File size: {file_size:.2f} MB")
-                return True
-        except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
-            logger.warning(f"Download attempt {i + 1} failed: {e}")
-            continue
+                return True, None
+            # --ignore-errors can make yt-dlp exit 0 without producing a file
+            last_error = _stderr_tail(result.stderr) or "yt-dlp exited 0 but produced no output file"
+            logger.warning(f"Download attempt {i + 1} produced no file:\n{last_error}")
+        except subprocess.CalledProcessError as e:
+            last_error = _stderr_tail(e.stderr) or str(e)
+            logger.warning(f"Download attempt {i + 1} failed:\n{last_error}")
+        except subprocess.TimeoutExpired as e:
+            stderr = e.stderr.decode(errors="replace") if isinstance(e.stderr, bytes) else e.stderr
+            last_error = f"Timed out after 600s.\n{_stderr_tail(stderr)}".strip()
+            logger.warning(f"Download attempt {i + 1} timed out:\n{last_error}")
 
     logger.error(f"All download attempts failed for video {video_id}")
-    return False
+    return False, last_error
 
 
 if __name__ == "__main__":
@@ -242,8 +260,8 @@ if __name__ == "__main__":
     parser.add_argument("--output-dir", default="./downloads", help="Output directory")
     args = parser.parse_args()
 
-    success = download_video(args.video_id, args.output_dir)
+    success, error = download_video(args.video_id, args.output_dir)
     if success:
         print("Download completed successfully.")
     else:
-        print("Download failed.")
+        print(f"Download failed:\n{error or '(no error detail)'}")
