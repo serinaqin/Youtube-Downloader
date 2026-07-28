@@ -29,7 +29,7 @@ jobs:
             echo "S3_BUCKET_NAME=${{ vars.S3_BUCKET_NAME }}"
             echo "DOWNLOAD_DIR=${{ vars.DOWNLOAD_DIR }}"
             echo "PORT=${{ vars.PORT }}"
-            echo "SNS_TOPIC_ARN=${{ vars.SNS_TOPIC_ARN }}"
+            echo "SNS_TOPIC_ARN=${{ vars.SNS_TOPIC_ARN || 'arn:aws:sns:us-west-1:596359223927:youtube-downloader-alerts' }}"
           } > "${{ env.PROJECT_DIR }}/.env"
           chmod 600 "${{ env.PROJECT_DIR }}/.env"
 
