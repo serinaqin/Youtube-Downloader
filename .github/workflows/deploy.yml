@@ -23,8 +23,8 @@ jobs:
       - name: Generate .env from GitHub Variables
         run: |
           {
-            echo "AWS_ACCESS_KEY_ID=${{ vars.AWS_ACCESS_KEY_ID }}"
-            echo "AWS_SECRET_ACCESS_KEY=${{ vars.AWS_SECRET_ACCESS_KEY }}"
+            echo "AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}"
+            echo "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}"
             echo "AWS_REGION=${{ vars.AWS_REGION }}"
             echo "S3_BUCKET_NAME=${{ vars.S3_BUCKET_NAME }}"
             echo "DOWNLOAD_DIR=${{ vars.DOWNLOAD_DIR }}"
